@@ -1,0 +1,12 @@
+Source: ros-humble-gtsam2mrpt-serial
+Section: misc
+Priority: optional
+Maintainer: Jose-Luis Blanco-Claraco <joseluisblancoc@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), cmake, ros-humble-gtsam, ros-humble-mola-common, ros-humble-mrpt-libbase, ros-humble-mrpt-libmath, ros-humble-mrpt-libposes, ros-humble-ros-workspace
+Homepage: https://github.com/MRPT/gtsam2mrpt_serial
+Standards-Version: 3.9.2
+
+Package: ros-humble-gtsam2mrpt-serial
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-humble-gtsam, ros-humble-mola-common, ros-humble-mrpt-libbase, ros-humble-mrpt-libmath, ros-humble-mrpt-libposes, ros-humble-ros-workspace
+Description: A C++ library offering a GTSAM ⇆ mrpt-serialization bridge.
