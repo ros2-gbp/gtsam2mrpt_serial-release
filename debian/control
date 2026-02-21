@@ -1,0 +1,12 @@
+Source: ros-jazzy-gtsam2mrpt-serial
+Section: misc
+Priority: optional
+Maintainer: Jose-Luis Blanco-Claraco <joseluisblancoc@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), cmake, ros-jazzy-gtsam, ros-jazzy-mola-common, ros-jazzy-mrpt-libbase, ros-jazzy-mrpt-libmath, ros-jazzy-mrpt-libposes, ros-jazzy-ros-workspace
+Homepage: https://github.com/MRPT/gtsam2mrpt_serial
+Standards-Version: 3.9.2
+
+Package: ros-jazzy-gtsam2mrpt-serial
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-jazzy-gtsam, ros-jazzy-mola-common, ros-jazzy-mrpt-libbase, ros-jazzy-mrpt-libmath, ros-jazzy-mrpt-libposes, ros-jazzy-ros-workspace
+Description: A C++ library offering a GTSAM ⇆ mrpt-serialization bridge.
