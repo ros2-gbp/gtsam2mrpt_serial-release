@@ -1,0 +1,12 @@
+Source: ros-rolling-gtsam2mrpt-serial
+Section: misc
+Priority: optional
+Maintainer: Jose-Luis Blanco-Claraco <joseluisblancoc@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), cmake, ros-rolling-gtsam, ros-rolling-mola-common, ros-rolling-mrpt-libbase, ros-rolling-mrpt-libmath, ros-rolling-mrpt-libposes, ros-rolling-ros-workspace
+Homepage: https://github.com/MRPT/gtsam2mrpt_serial
+Standards-Version: 3.9.2
+
+Package: ros-rolling-gtsam2mrpt-serial
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-rolling-gtsam, ros-rolling-mola-common, ros-rolling-mrpt-libbase, ros-rolling-mrpt-libmath, ros-rolling-mrpt-libposes, ros-rolling-ros-workspace
+Description: A C++ library offering a GTSAM ⇆ mrpt-serialization bridge.
