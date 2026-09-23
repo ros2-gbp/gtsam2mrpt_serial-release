@@ -1,3 +1,26 @@
+## gtsam2mrpt_serial (humble) - 0.3.0-1
+
+The packages in the `gtsam2mrpt_serial` repository were released into the `humble` distro by running `/home/jlblanco/code/bloom-venv/bin/bloom-release -y -r humble gtsam2mrpt_serial` on `Wed, 23 Sep 2026 17:33:46 -0000`
+
+The `gtsam2mrpt_serial` package was released.
+
+Version of package(s) in repository `gtsam2mrpt_serial`:
+
+- upstream repository: https://github.com/MRPT/gtsam2mrpt_serial.git
+- release repository: https://github.com/ros2-gbp/gtsam2mrpt_serial-release.git
+- rosdistro version: `0.2.0-1`
+- old version: `0.2.0-1`
+- new version: `0.3.0-1`
+
+Versions of tools used:
+
+- bloom version: `0.14.3`
+- catkin_pkg version: `0.5.2`
+- rosdep version: `0.22.2`
+- rosdistro version: `0.9.0`
+- vcstools version: `0.1.42`
+
+
 ## gtsam2mrpt_serial (rolling) - 0.2.0-1
 
 The packages in the `gtsam2mrpt_serial` repository were released into the `rolling` distro by running `/home/jlblanco/code/bloom-venv/bin/bloom-release -y -r rolling gtsam2mrpt_serial` on `Sat, 21 Feb 2026 10:27:19 -0000`
