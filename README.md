@@ -1,3 +1,26 @@
+## gtsam2mrpt_serial (kilted) - 0.4.0-1
+
+The packages in the `gtsam2mrpt_serial` repository were released into the `kilted` distro by running `/usr/bin/bloom-release -y -r kilted gtsam2mrpt_serial` on `Fri, 25 Sep 2026 11:10:03 -0000`
+
+The `gtsam2mrpt_serial` package was released.
+
+Version of package(s) in repository `gtsam2mrpt_serial`:
+
+- upstream repository: https://github.com/MRPT/gtsam2mrpt_serial.git
+- release repository: https://github.com/ros2-gbp/gtsam2mrpt_serial-release.git
+- rosdistro version: `0.3.0-1`
+- old version: `0.3.0-1`
+- new version: `0.4.0-1`
+
+Versions of tools used:
+
+- bloom version: `0.14.4`
+- catkin_pkg version: `1.1.1`
+- rosdep version: `0.27.0`
+- rosdistro version: `1.1.0`
+- vcstools version: `0.1.42`
+
+
 ## gtsam2mrpt_serial (jazzy) - 0.4.0-1
 
 The packages in the `gtsam2mrpt_serial` repository were released into the `jazzy` distro by running `/usr/bin/bloom-release -y -r jazzy gtsam2mrpt_serial` on `Fri, 25 Sep 2026 11:08:45 -0000`
