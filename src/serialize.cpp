@@ -3,6 +3,7 @@
    |                                                                        |
    | Copyright (c) 2022-2026, Jose Luis Blanco Claraco and contributors     |
    | Released under 3-clause BSD license                                    |
+   | SPDX-License-Identifier: BSD-3-Clause                                  |
    +------------------------------------------------------------------------+ */
 
 #include <gtsam2mrpt_serial/serialize.h>
@@ -19,6 +20,9 @@
 #include <mrpt/math/CMatrixD.h>
 #include <mrpt/poses/gtsam_wrappers.h>
 #include <mrpt/serialization/CArchive.h>
+
+#include <limits>
+#include <typeinfo>
 
 // ----------------------------------
 // Serialize individual values
@@ -234,12 +238,16 @@ mrpt::serialization::CArchive& gtsam2mrpt_serial::operator>>(
     return in;
 }
 
-static void serialize_noise_robust(
+namespace
+{
+void serialize_noise_robust(
     mrpt::serialization::CArchive&                         out,
     const gtsam::noiseModel::mEstimator::Base::shared_ptr& robust)
 {
-    out.WriteAs<bool>(robust.get() != nullptr);
-    if (!robust) return;
+    // A Robust noise model always requires an m-estimator. The flag is kept in
+    // the stream for format compatibility.
+    ASSERTMSG_(robust, "Robust noise model has a null m-estimator");
+    out.WriteAs<bool>(true);
 
     using namespace gtsam;
     using namespace gtsam::noiseModel;
@@ -247,70 +255,49 @@ static void serialize_noise_robust(
     // Base: ReweightScheme reweight_;
     out.WriteAs<uint32_t>(robust->reweightScheme());
 
-    // Derived:
-    if (auto* n = dynamic_cast<const mEstimator::Null*>(robust.get()); n)
+    // Derived: match exact types, so subclasses of the supported estimators
+    // (which may override their behavior) are not silently stored as their
+    // base class.
+    const std::type_info& ti = typeid(*robust);
+
+#define SERIALIZE_MESTIMATOR(TYPE__)                           \
+    if (ti == typeid(mEstimator::TYPE__))                      \
+    {                                                          \
+        out.WriteAs<std::string>(#TYPE__);                     \
+        out << static_cast<const mEstimator::TYPE__&>(*robust) \
+                   .modelParameter();                          \
+        return;                                                \
+    }
+
+    if (ti == typeid(mEstimator::Null))
     {
         // no params
         out.WriteAs<std::string>("Null");
+        return;
     }
-    else if (auto* n2 = dynamic_cast<const mEstimator::Fair*>(robust.get()); n2)
-    {
-        out.WriteAs<std::string>("Fair");
-        out << n2->modelParameter();
-    }
-    else if (auto* n3 = dynamic_cast<const mEstimator::Huber*>(robust.get());
-             n3)
-    {
-        out.WriteAs<std::string>("Huber");
-        out << n3->modelParameter();
-    }
-    else if (auto* n4 = dynamic_cast<const mEstimator::Cauchy*>(robust.get());
-             n4)
-    {
-        out.WriteAs<std::string>("Cauchy");
-        out << n4->modelParameter();
-    }
-    else if (auto* n5 = dynamic_cast<const mEstimator::Tukey*>(robust.get());
-             n5)
-    {
-        out.WriteAs<std::string>("Tukey");
-        out << n5->modelParameter();
-    }
-    else if (auto* n6 = dynamic_cast<const mEstimator::Welsch*>(robust.get());
-             n6)
-    {
-        out.WriteAs<std::string>("Welsch");
-        out << n6->modelParameter();
-    }
-    else if (auto* n7 =
-                 dynamic_cast<const mEstimator::GemanMcClure*>(robust.get());
-             n7)
-    {
-        out.WriteAs<std::string>("GemanMcClure");
-        out << n7->modelParameter();
-    }
-    else if (auto* n8 = dynamic_cast<const mEstimator::DCS*>(robust.get()); n8)
-    {
-        out.WriteAs<std::string>("DCS");
-        out << n8->modelParameter();
-    }
-    else if (auto* n9 =
-                 dynamic_cast<const mEstimator::L2WithDeadZone*>(robust.get());
-             n9)
-    {
-        out.WriteAs<std::string>("L2WithDeadZone");
-        out << n9->modelParameter();
-    }
+    SERIALIZE_MESTIMATOR(Fair)
+    SERIALIZE_MESTIMATOR(Huber)
+    SERIALIZE_MESTIMATOR(Cauchy)
+    SERIALIZE_MESTIMATOR(Tukey)
+    SERIALIZE_MESTIMATOR(Welsch)
+    SERIALIZE_MESTIMATOR(GemanMcClure)
+    SERIALIZE_MESTIMATOR(DCS)
+    SERIALIZE_MESTIMATOR(L2WithDeadZone)
+
+#undef SERIALIZE_MESTIMATOR
+
+    THROW_EXCEPTION_FMT(
+        "Serialization not implemented for m-estimator type '%s'", ti.name());
 }
 
-static gtsam::noiseModel::mEstimator::Base::shared_ptr deserialize_noise_robust(
+gtsam::noiseModel::mEstimator::Base::shared_ptr deserialize_noise_robust(
     mrpt::serialization::CArchive& in)
 {
     using namespace gtsam;
     using namespace gtsam::noiseModel;
 
     const bool isNotNull = in.ReadAs<bool>();
-    ASSERT_(isNotNull);
+    ASSERTMSG_(isNotNull, "Robust noise model has a null m-estimator");
 
     // Base: ReweightScheme reweight_;
     const auto scheme =
@@ -372,7 +359,7 @@ static gtsam::noiseModel::mEstimator::Base::shared_ptr deserialize_noise_robust(
     }
 }
 
-static void serialize_noise_model(
+void serialize_noise_model(
     mrpt::serialization::CArchive& out, const gtsam::SharedNoiseModel& noise)
 {
     out.WriteAs<bool>(noise.get() != nullptr);
@@ -400,8 +387,11 @@ static void serialize_noise_model(
                  dynamic_cast<const noiseModel::Constrained*>(noise.get());
              n3)
     {
-        out.WriteAs<std::string>("Constrained");
+        // "Constrained" (mu only, all sigmas zero) is only read, for backward
+        // compatibility. Mixed constraints need the sigmas too.
+        out.WriteAs<std::string>("ConstrainedMixed");
         out << mrpt::math::CMatrixD(n3->mu());
+        out << mrpt::math::CMatrixD(n3->sigmas());
     }
     else if (auto* n4 = dynamic_cast<const noiseModel::Diagonal*>(noise.get());
              n4)
@@ -430,7 +420,7 @@ static void serialize_noise_model(
     }
 }
 
-static gtsam::SharedNoiseModel deserialize_noise_model(
+gtsam::SharedNoiseModel deserialize_noise_model(
     mrpt::serialization::CArchive& in)
 {
     using namespace gtsam;
@@ -465,6 +455,15 @@ static gtsam::SharedNoiseModel deserialize_noise_model(
         gtsam::Matrix matMu = mMu.asEigen();
         return noiseModel::Constrained::All(dim, matMu);
     }
+    else if (t == "ConstrainedMixed")
+    {
+        mrpt::math::CMatrixD mMu;
+        mrpt::math::CMatrixD mSigmas;
+        in >> mMu >> mSigmas;
+        gtsam::Vector matMu     = mMu.asEigen();
+        gtsam::Vector matSigmas = mSigmas.asEigen();
+        return noiseModel::Constrained::MixedSigmas(matMu, matSigmas);
+    }
     else if (t == "Isotropic")
     {
         double sigma = in.ReadAs<double>();
@@ -485,6 +484,7 @@ static gtsam::SharedNoiseModel deserialize_noise_model(
         THROW_EXCEPTION_FMT("Unknown noiseModel type: '%s'", t.c_str());
     }
 }
+}  // namespace
 
 // ----------------------------------
 // Serialize individual Factors
@@ -495,37 +495,30 @@ mrpt::serialization::CArchive& gtsam2mrpt_serial::operator<<(
     using namespace gtsam;
 
     // Keys:
+    ASSERTMSG_(
+        factor.keys().size() <= std::numeric_limits<uint16_t>::max(),
+        "Factor has too many keys to be serialized");
     out.WriteAs<uint16_t>(factor.keys().size());
     for (const auto& k : factor.keys()) out << k;
 
-// Each macro expansion introduces its own unique variable name (f_##TYPE__)
-// to avoid -Wshadow warnings from repeated use of the same identifier across
-// consecutive else-if branches.
-#define SERIALIZE_PRIOR_FACTOR(TYPE__)                               \
-    else if (auto* f_##TYPE__ =                                      \
-                 dynamic_cast<const PriorFactor<TYPE__>*>(&factor);  \
-             f_##TYPE__)                                             \
-    {                                                                \
-        out.WriteAs<std::string>("PriorFactor<" #TYPE__ ">");        \
-        serialize_noise_model(out, f_##TYPE__->noiseModel());        \
-        out << GenericValue<TYPE__>(f_##TYPE__->prior()); /*NOLINT*/ \
-    }
-
-#define SERIALIZE_BETWEEN_FACTOR(TYPE__)                                \
-    else if (auto* f_##TYPE__ =                                         \
-                 dynamic_cast<const BetweenFactor<TYPE__>*>(&factor);   \
-             f_##TYPE__)                                                \
+#define SERIALIZE_PRIOR_FACTOR(TYPE__)                                  \
+    if (auto* f = dynamic_cast<const PriorFactor<TYPE__>*>(&factor); f) \
     {                                                                   \
-        out.WriteAs<std::string>("BetweenFactor<" #TYPE__ ">");         \
-        serialize_noise_model(out, f_##TYPE__->noiseModel());           \
-        out << GenericValue<TYPE__>(f_##TYPE__->measured()); /*NOLINT*/ \
+        out.WriteAs<std::string>("PriorFactor<" #TYPE__ ">");           \
+        serialize_noise_model(out, f->noiseModel());                    \
+        out << GenericValue<TYPE__>(f->prior()); /*NOLINT*/             \
+        return out;                                                     \
     }
 
-    // `if (0) {}` is a deliberate idiom: it gives all the SERIALIZE_*
-    // macros a uniform `else if (...)` prefix without a special-cased first
-    // branch.
-    if (0) {}  // NOLINT(readability-simplify-boolean-expr)
-    //
+#define SERIALIZE_BETWEEN_FACTOR(TYPE__)                                  \
+    if (auto* f = dynamic_cast<const BetweenFactor<TYPE__>*>(&factor); f) \
+    {                                                                     \
+        out.WriteAs<std::string>("BetweenFactor<" #TYPE__ ">");           \
+        serialize_noise_model(out, f->noiseModel());                      \
+        out << GenericValue<TYPE__>(f->measured()); /*NOLINT*/            \
+        return out;                                                       \
+    }
+
     SERIALIZE_PRIOR_FACTOR(Point2)
     SERIALIZE_PRIOR_FACTOR(Point3)
     SERIALIZE_PRIOR_FACTOR(Pose2)
@@ -535,19 +528,16 @@ mrpt::serialization::CArchive& gtsam2mrpt_serial::operator<<(
     SERIALIZE_BETWEEN_FACTOR(Point3)
     SERIALIZE_BETWEEN_FACTOR(Pose2)
     SERIALIZE_BETWEEN_FACTOR(Pose3)
-    //
-    else
-    {
-        std::cerr << "Serialization not implemented for this "
-                     "gtsam::NonlinearFactor:\n";
-        factor.print();
-        THROW_EXCEPTION(
-            "Serialization not implemented, see error message above for "
-            "type "
-            "details.");
-    }
 
-    return out;
+#undef SERIALIZE_PRIOR_FACTOR
+#undef SERIALIZE_BETWEEN_FACTOR
+
+    std::cerr << "Serialization not implemented for this "
+                 "gtsam::NonlinearFactor:\n";
+    factor.print();
+    THROW_EXCEPTION(
+        "Serialization not implemented, see error message above for type "
+        "details.");
 }
 
 // ----------------------------------
